@@ -25,6 +25,16 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 #ring{position:absolute;inset:-10px;border-radius:50%;border:4px solid var(--hot);opacity:0;pointer-events:none;transition:transform .08s linear,opacity .2s}
 #mic.on #ring{opacity:.9}
 #mic:focus-visible{outline:3px solid #fff;outline-offset:6px}
+
+.micRow{display:flex;align-items:center;gap:14px}
+.side{width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);background:#2b2648;color:var(--fg);font-family:var(--pixel);font-size:13px;cursor:pointer;box-shadow:0 4px 0 var(--ink);opacity:0;pointer-events:none;transition:opacity .3s}
+#micWrap.docked .side{opacity:1;pointer-events:auto}
+.side:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#typeForm{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(122px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;width:min(440px,calc(100vw - 32px));z-index:6}
+#typeForm[hidden]{display:none}
+#typeIn{flex:1;min-width:0;font:14px var(--pixel);padding:10px 12px;border-radius:10px;border:2px solid var(--ink);background:rgba(18,15,32,.92);color:var(--fg);outline:none}
+#typeIn:focus{border-color:var(--accent)}
+#typeForm button{font:700 13px var(--pixel);padding:0 14px;border-radius:10px;border:2px solid var(--ink);background:var(--accent);color:var(--ink);cursor:pointer}
 #micHint{font-size:13px;text-align:center;line-height:1.5;background:rgba(18,15,32,.82);border:2px solid var(--ink);padding:10px 14px;border-radius:10px;max-width:min(340px,86vw);text-shadow:0 1px 0 #000}
 #micHint b{color:var(--accent);font-weight:700}
 #micHint small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
@@ -41,17 +51,22 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 <div class="vignette"></div>
 <div id="heard" role="status" aria-live="polite"></div>
 <div id="micWrap">
-  <button id="mic" type="button" aria-label="Mikrofonni yoqish">
-    <span id="ring"></span>
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0h-2a5 5 0 0 1-10 0H5z"/><rect x="11" y="17" width="2" height="4"/><rect x="8" y="20" width="8" height="2"/></svg>
-  </button>
-  <div id="micHint"><b>Boss, buyruq bering!</b><small>Gapiring: «Salom!», «Qalaysizlar?», «Aziz, ishla!», «Tanaffus», «Raqs», «Pitsa», «Urishmanglar!»… Xodimlarni bossangiz ham bo'ladi.</small></div>
+  <div class="micRow">
+    <button id="lang" class="side" type="button" aria-label="Tinglash tili">UZ</button>
+    <button id="mic" type="button" aria-label="Mikrofonni yoqish">
+      <span id="ring"></span>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0h-2a5 5 0 0 1-10 0H5z"/><rect x="11" y="17" width="2" height="4"/><rect x="8" y="20" width="8" height="2"/></svg>
+    </button>
+    <button id="kb" class="side" type="button" aria-label="Yozib buyruq berish">⌨</button>
+  </div>
+  <div id="micHint"><b>Boss, buyruq bering!</b><small>Gapiring: «Salom!», «Qalaysizlar?», «Aziz, ishla!», «Plov tayyormi?», «Sport!», «Urishmanglar!»… Xodimlarni bossangiz ham bo'ladi.</small></div>
 </div>
+<form id="typeForm" hidden autocomplete="off"><input id="typeIn" type="text" placeholder="Buyruq yozing: «Dilnoza, tanaffus»" enterkeyhint="send" aria-label="Buyruq"><button type="submit">Ayt</button></form>
 
 <script>
 (()=>{
 /* ================= world ================= */
-const T=16, COLS=64, ROWS=40, WW=COLS*T, WH=ROWS*T;
+const T=16, COLS=80, ROWS=48, WW=COLS*T, WH=ROWS*T;
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const srnd=mulberry(20261030);
 const rand=(a,b)=>a+Math.random()*(b-a);
@@ -64,6 +79,7 @@ const floor=[...Array(ROWS)].map(()=>Array(COLS).fill('wood'));
 const area=(x0,y0,x1,y1,f)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)floor[y][x]=f};
 area(32,2,46,14,'dev'); area(48,2,62,14,'studio'); area(32,16,40,24,'tile'); area(41,16,62,24,'lounge');
 area(1,26,20,38,'meet'); area(22,26,41,38,'design'); area(43,26,62,38,'boss');
+area(64,2,78,14,'sales'); area(64,16,78,24,'gym'); area(64,26,78,38,'recep'); area(1,40,30,46,'canteen'); area(32,40,51,46,'nap'); area(53,40,78,46,'bill');
 for(let x=0;x<COLS;x++){solid[0][x]=1;solid[1][x]=1;solid[ROWS-1][x]=1}
 for(let y=0;y<ROWS;y++){solid[y][0]=1;solid[y][COLS-1]=1}
 const doors=[];
@@ -71,6 +87,7 @@ function hwall(y,x0,x1,d){for(let x=x0;x<=x1;x++){if(d.includes(x)){doors.push([
 function vwall(x,y0,y1,d){for(let y=y0;y<=y1;y++){if(d.includes(y)){doors.push([x,y,'v']);floor[y][x]=floor[y][x-1]}else solid[y][x]=1}}
 vwall(31,2,24,[8,9,19,20]); hwall(15,32,62,[38,39,55,56]); vwall(47,2,14,[10,11]);
 hwall(25,1,62,[10,11,28,29,52,53]); vwall(21,26,38,[]); vwall(42,26,38,[]);
+vwall(63,2,38,[8,9,22,23,33,34]); hwall(15,64,78,[71,72]); hwall(25,64,78,[71,72]); hwall(39,1,78,[10,11,38,39,60,61,70,71]); vwall(31,40,46,[]); vwall(52,40,46,[]);
 const blk=(x,y,w=1,h=1)=>{for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)solid[j][i]=2};
 const walkable=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&!solid[y][x];
 
@@ -78,13 +95,16 @@ const walkable=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&!solid[y][x];
 const spots=[];
 function spot(x,y,act,face,sit,o={}){const s={x,y,act,face,sit,taken:null,...o};spots.push(s);return s}
 const desks=[], homes=[];
-function desk(x,y,kind){blk(x,y,3,2);const s=spot(x+1,y+2,'work','u',true,{home:true,chairBack:true});const d={x,y,kind,seat:s};desks.push(d);s.desk=d;homes.push(s);return d}
-for(const y of [4,10,16])for(const x of [2,8,14,20,26])desk(x,y,'wood');
-for(const y of [4,9])for(const x of [33,37,41])desk(x,y,'dev');
-[[24,28],[30,28],[24,33],[30,33],[35,33]].forEach(([x,y])=>desk(x,y,'white'));
-homes.push(spot(54,4,'present','d',false,{home:true}));
-homes.push(spot(54,9,'cam','u',false,{home:true}));
-blk(58,11,3,2); homes.push(spot(59,13,'work','u',true,{home:true,chairBack:true,edit:true}));
+function desk(x,y,kind,team){blk(x,y,3,2);const s=spot(x+1,y+2,'work','u',true,{home:true,chairBack:true,team});const d={x,y,kind,seat:s};desks.push(d);s.desk=d;homes.push(s);return d}
+for(const y of [4,10,16])for(const x of [2,8,14,20,26])desk(x,y,'wood','mkt');
+for(const y of [4,9])for(const x of [33,37,41])desk(x,y,'dev','dev');
+[[24,28],[30,28],[24,33],[30,33],[35,33]].forEach(([x,y])=>desk(x,y,'white','dsg'));
+homes.push(spot(54,4,'present','d',false,{home:true,team:'std'}));
+homes.push(spot(54,9,'cam','u',false,{home:true,team:'std'}));
+blk(58,11,3,2); homes.push(spot(59,13,'work','u',true,{home:true,chairBack:true,edit:true,team:'std'}));
+for(const y of [4,9])for(const x of [65,69,73])desk(x,y,'sales','sales');
+blk(68,29,5,1); homes.push(spot(70,28,'recep','d',true,{home:true,team:'recep'}));
+blk(3,41,2,2); homes.push(spot(5,42,'cook','l',false,{home:true,team:'cook'}));
 
 // furniture blocks
 [[1,2],[30,2],[1,24],[30,24],[32,14],[46,14],[48,14],[32,24],[41,24],[62,24],[1,26],[20,26],[1,38],[20,38],[22,26],[41,26],[22,38],[43,26],[62,38],[62,30]].forEach(([x,y])=>blk(x,y));
@@ -92,6 +112,9 @@ blk(2,22); blk(14,23,2,1); blk(45,3,2,4); blk(51,2,7,1); blk(50,4); blk(58,4); b
 blk(33,16,4,1); blk(40,16); blk(34,21,3,2); blk(44,19,4,2); blk(53,19,3,1); blk(60,16,2,1); blk(62,19,1,2);
 blk(5,30,11,3); blk(17,26,3,1); blk(36,26,5,1); blk(39,37,2,1);
 blk(44,26,5,1); blk(61,26); blk(50,31,5,2); blk(52,33); blk(51,29); blk(53,29); blk(57,36,4,1);
+[[64,2],[78,14],[64,24],[78,16],[64,26],[78,38],[64,38],[1,46],[30,40],[32,46],[51,40],[53,46],[78,46]].forEach(([x,y])=>blk(x,y));
+blk(77,3,1,1); blk(75,18); blk(77,21,1,3); blk(73,35,4,1);
+blk(9,42,6,2); blk(18,42,6,2); blk(1,41,1,4); blk(58,42,5,3); blk(70,41,7,1); blk(53,41,1,1);
 
 // break spots
 [33,34,35,36].forEach(x=>spot(x,17,'coffee','u',false));
@@ -104,12 +127,21 @@ spot(60,17,'arcade','u',false); spot(61,17,'arcade','u',false);
 spot(50,19,'chat','r',false); spot(58,19,'chat','l',false);
 [24,25,26,27].forEach(x=>spot(x,22,'sofa','d',true,{sofa:'#e4572e'}));
 spot(37,27,'chat','u',false); spot(39,27,'chat','u',false);
+[66,68,70].forEach(x=>spot(x,18,'run','u',false,{tread:true}));
+spot(75,19,'boxing','u',false);
+[66,68,70].forEach(x=>spot(x,22,'yoga','d',false,{mat:true}));
+for(let x=9;x<=14;x++){spot(x,41,'eat','d',true);spot(x,44,'eat','u',true,{chairBack:true})}
+for(let x=18;x<=23;x++){spot(x,41,'eat','d',true);spot(x,44,'eat','u',true,{chairBack:true})}
+[34,37,40,43,46,49].forEach(x=>spot(x,42,'nap','d',true,{bed:true}));
+spot(57,43,'pool','r',false); spot(63,43,'pool','l',false);
+for(let x=70;x<=76;x++)spot(x,42,'chat','u',true,{stool:true});
+[65,66,67].forEach(x=>spot(x,34,'sofa','u',true,{sofa:'#5b7cfa'}));
 const meetChairs=[];
 for(let x=5;x<=15;x++){meetChairs.push(spot(x,29,'meet','d',true,{meetChair:true}));meetChairs.push(spot(x,33,'meet','u',true,{meetChair:true,chairBack:true}))}
-const breakSpots=spots.filter(s=>['coffee','water','chat','pong','sofa','arcade'].includes(s.act));
+const breakSpots=spots.filter(s=>['coffee','water','chat','pong','sofa','arcade','run','boxing','yoga','eat','nap','pool'].includes(s.act));
 
 const REG={
-  lounge:[32,16,62,24], meet:[1,26,20,38], open:[1,2,30,24], all:[1,2,62,38], boss:[43,26,62,38]
+  lounge:[32,16,62,24], meet:[1,26,20,38], open:[1,2,30,24], all:[1,2,78,46], boss:[43,26,62,38], gym:[64,16,78,24], canteen:[1,40,30,46], recep:[64,26,78,38], sales:[64,2,78,14], bill:[53,40,78,46]
 };
 const reservedTiles=new Set();
 function randomTile(r,tries=60){const[x0,y0,x1,y1]=REG[r];for(let i=0;i<tries;i++){const x=Math.floor(rand(x0,x1+1)),y=Math.floor(rand(y0,y1+1));const k=x+','+y;if(walkable(x,y)&&!reservedTiles.has(k)&&!spots.some(s=>s.x===x&&s.y===y))return{x,y,face:pick(['d','l','r']),sit:false,tile:true,key:k}}return null}
@@ -137,8 +169,9 @@ const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16);const c=v=>Math.max(0,Ma
 const NAMES=[['Aziz',0],['Dilnoza',1],['Sardor',0],['Malika',1],['Javlon',0],['Nodira',1],["Ulug'bek",0],['Shahzoda',1],['Otabek',0],['Feruza',1],['Sherzod',0],['Kamola',1],['Jahongir',0],['Madina',1],['Rustam',0],
   ['Zarina',1],['Akmal',0],['Gulnoza',1],['Doniyor',0],['Lola',1],['Bobur',0],
   ['Sevara',1],['Farrux',0],['Nigora',1],['Timur',0],['Munisa',1],
-  ['Diyor',0],['Asal',1],['Islom',0]];
-const ALIAS={farrux:['farruh','faruh','farrukh'],doniyor:['daniyar','doniyar','daniyor'],islom:['islam'],timur:['temur'],javlon:['javlan','djavlon'],diyor:['diyar'],bobur:['babur'],ulugbek:['ulug bek','ulugbeg'],jahongir:['jaxongir','djahongir','jahangir'],sherzod:['sherzot'],shahzoda:['shaxzoda'],gulnoza:['gulnaza'],nigora:['nigara'],dilnoza:['dilnaza'],kamola:['kamala'],lola:['lala'],otabek:['atabek'],sardor:['sardar'],munisa:['munisa'],zarina:['zarina']};
+  ['Diyor',0],['Asal',1],['Islom',0],
+  ['Sanjar',0],['Mohira',1],['Jamshid',0],['Dildora',1],['Shoxrux',0],['Komil',0],['Nilufar',1],['Rahim',0]];
+const ALIAS={farrux:['farruh','faruh','farrukh'],doniyor:['daniyar','doniyar','daniyor'],islom:['islam'],timur:['temur'],javlon:['javlan','djavlon'],diyor:['diyar'],bobur:['babur'],ulugbek:['ulug bek','ulugbeg'],jahongir:['jaxongir','djahongir','jahangir'],sherzod:['sherzot'],shahzoda:['shaxzoda'],gulnoza:['gulnaza'],nigora:['nigara'],dilnoza:['dilnaza'],kamola:['kamala'],lola:['lala'],otabek:['atabek'],sardor:['sardar'],munisa:['munisa'],zarina:['zarina'],shoxrux:['shohruh','shaxrux','shohrux'],jamshid:['jamshed','djamshid'],dildora:['dildara'],nilufar:['nilufar','nilyufar'],rahim:['raxim','rahim aka'],komil:['kamil'],sanjar:['sanjar'],mohira:['moxira']};
 const PERS=['qorqoq','dangasa','xushomad','isyon','hazil','jiddiy','asabiy'];
 const persList=[];for(let i=0;i<NAMES.length;i++)persList.push(PERS[i%PERS.length]);
 for(let i=persList.length-1;i>0;i--){const j=Math.floor(srnd()*(i+1));[persList[i],persList[j]]=[persList[j],persList[i]]}
@@ -156,12 +189,12 @@ function baseBody(x,y,dest){return{x,y,dir:'d',dest,path:[],state:'idle',act:'id
 const agents=homes.map((h,i)=>{
   const [name,fem]=NAMES[i];const key=keyOf(name);
   const a=Object.assign(baseBody(h.x,h.y,h),{id:i,home:h,name,key,keys:[key,...(ALIAS[key]||[])],pers:persList[i],
-    team:i<15?'mkt':i<21?'dev':i<26?'dsg':'std',act:h.act,dir:h.face,timer:rand(2,14),mood:rand(45,80)});
+    team:h.team,act:h.act,dir:h.face,timer:rand(2,14),mood:rand(45,80)});
   return dressUp(a,!!fem);
 });
 const extras=[];
 const allPeople=()=>agents.concat(extras);
-const ENTRY={x:1,y:20};
+const ENTRY={x:78,y:32};
 [3,9,17,22,12].forEach((id,k)=>{const a=agents[id];if(!a)return;const s=breakSpots.filter(s=>!s.taken)[k*3%breakSpots.length];if(!s||s.taken)return;s.taken=a;a.x=s.x;a.y=s.y;a.dest=s;a.act=s.act;a.timer=rand(4,12)});
 
 const pets={cat:{x:45,y:37,path:[],timer:5,dir:'r',sit:true,anim:0,bubble:null,fx:{jump:0},lock:false,fast:false},bot:{x:12,y:20,path:[],timer:1,anim:0,turbo:0}};
@@ -176,7 +209,9 @@ const L={
   present:["Assalomu alaykum!","Obuna bo'ling!","Dubl 3","Kadr!"],
   think:["Hmm…","Render…","Deploy…","Lid keldi!","CTR o'sdi","Bug topdim"],
   meet:["Kim gapiradi?","Bloknot qani?","Yana majlis…"],
-  sofa:["Rohat…","Telefon zaryadi?","Charchadim"]
+  sofa:["Rohat…","Telefon zaryadi?","Charchadim"],
+  run:["Yana 1 km!","Kardio!","Hansirayapman"],boxing:["Hu-ha!","TUK!","Dedlayn, mana senga!"],yoga:["Ommm…","Nafas…"],eat:["Mazali!","Yana bir kosa!","Non bering"],
+  nap:["Zzz"],pool:["Cho'ntakka!","Zo'r zarba","Kiy qani?"],cook:["Plov pishyapti!","Zirasi kam","Kim och?"],recep:["Xush kelibsiz!","Kutib turing","Allo, TASMA!"]
 };
 let quietT=0;
 function bubbles(){let n=0;for(const a of allPeople())if(a.bubble)n++;return n}
@@ -204,7 +239,7 @@ function hereTile(a){return tileDest(Math.round(a.x),Math.round(a.y))}
 function stay(a,act,dur){if(a.onArrive){const cb=a.onArrive;a.onArrive=null;cb()}release(a);a.path=[];a.state='idle';const t=hereTile(a);a.x=t.x;a.y=t.y;a.dest=t;a.act=act;a.timer=dur}
 function sendHome(a,run=false){if(!a.home)return;goTo(a,a.home,a.home.act,a.home.act==='work'?rand(12,24):rand(25,40),run)}
 function atHome(a){return a.state!=='walk'&&a.dest===a.home}
-const studio=a=>a.team==='std';
+const studio=a=>a.team==='std'||a.team==='cook'||a.team==='recep';
 function freeA(a){return a&&a.home&&!a.scene&&!a.hidden&&a.act!=='flee'}
 const freeList=(f=()=>true)=>agents.filter(a=>freeA(a)&&f(a));
 const pickFree=(f)=>{const l=freeList(f);return l.length?pick(l):null};
@@ -222,6 +257,8 @@ function decide(a){
     if(r<sleepy){a.act='sleep';a.timer=rand(14,26);return}
     if(r<.5){a.timer=rand(10,22);return}
     const free=breakSpots.filter(s=>!s.taken);
+    const naps=free.filter(s=>s.act==='nap');
+    if(a.pers==='dangasa'&&naps.length&&Math.random()<.5){goTo(a,pick(naps),'nap',rand(15,25));return}
     if(free.length){const s=pick(free);goTo(a,s,s.act,rand(9,18));return}
     a.timer=rand(8,14);return;
   }
@@ -345,14 +382,33 @@ const EV={
       for(let i=0;i<4;i++){hearts(i%2?a:b,2);await S.wait(1)}S.say(a,'…',1.5);S.say(b,'…',1.5);const w=nearest(a,1)[0];if(w)say(w,'Uuuu~',1.8,true);await S.wait(2)})},
   sulk(){const a=pickFree(a=>a.mood<38)||null;if(!a)return;runScene([a],async S=>{const t=nearTile(55,22,3);await S.walk(a,t.x,t.y);S.say(a,'Hech kim meni tushunmaydi…',2.6);await S.wait(3);
       const f=nearest(a,1)[0];if(f&&S.join(f,false)){const t2=besideTile(a);await S.move(f,t2.x,t2.y);faceTo(f,a);faceTo(a,f);S.say(f,"Nima bo'ldi?",1.8);await S.wait(1.8);S.say(a,'Charchadim…',1.8);await S.wait(1.8);S.say(f,'Qahva ichamizmi?',2);hearts(a,3);a.mood+=30;await S.wait(2)}})},
-  pizza(){sPizza(false)}
+  pizza(){sPizza(false)},
+  gong(){const a=pickFree(a=>a.team==='sales');if(!a)return;runScene([a],async S=>{S.say(a,'SOTUV!!!',2);jump(a,1.4);await S.wait(.8);await S.walk(a,76,4,true,'r');S.say(a,'GONG!',1.6);
+      for(let k=0;k<3;k++){setFlash('#ffcf4a',.15);burstAt('conf',77*T+8,3*T-4,10,'#ffcf4a');await S.wait(.4)}
+      agents.forEach(o=>{if(o.team==='sales'&&o!==a&&!o.hidden&&!o.scene){jump(o,1.2);say(o,pick(['Ura!!','Zo\'r!','Yana!']),1.8,true)}});await S.wait(2)})},
+  plov(){if(Math.random()<.5)sCanteen(false)},
+  visitor(){const r=agents.find(a=>a.team==='recep'&&freeA(a)&&atHome(a));const v=makeCourier();v.name='Mijoz';v.shirt='#2f3a5a';v.shirtD=shade('#2f3a5a',.72);v.hair='#24180f';v.tie='#e94f64';v.collar=true;
+    runScene([v],async S=>{await S.walk(v,70,31,false,'u');if(r){faceTo(r,v);say(r,'Xush kelibsiz!',2,true)}S.say(v,pick(['Salom! Boss bormi?','Reklama qachon chiqadi?!','Hamkorlik bo\'yicha keldim']),2.4);await S.wait(2.6);
+      const m=pickFree(a=>a.team==='mkt'||a.team==='sales');if(m&&S.join(m,true)){const t=besideTile(v);await S.walk(m,t.x,t.y,true);faceTo(m,v);faceTo(v,m);S.say(m,'Assalomu alaykum! Marhamat',2.2);await S.wait(2.2);
+        if(Math.random()<.4){S.say(v,'Natija qani?!',1.8);v.fx.shake=.6;await S.wait(1.8);S.say(m,'Lidlar 2 baravar oshdi!',2.2);await S.wait(2.2);S.say(v,'Oo, zo\'r!',1.8);hearts(v,3)}else{S.say(v,'Shartnoma tuzamiz!',2);await S.wait(1.6);S.say(m,'Ura!',1.6);jump(m)}
+        await S.wait(2);await S.walk(v,ENTRY.x,ENTRY.y);v.hidden=true}else{await S.wait(3);await S.walk(v,ENTRY.x,ENTRY.y);v.hidden=true}})},
+  spar(){const a=pickFree(a=>a.pers==='asabiy'||a.pers==='isyon');if(!a)return;const b=nearest(a,1,b=>!studio(b))[0];if(!b)return;
+    runScene([a,b],async S=>{await S.walk(a,72,20,true);S.say(a,'Kim kuchli? Sport zalga!',2.2);await S.walk(b,73,20,true);faceTo(a,b);faceTo(b,a);S.say(b,'Ko\'ramiz!',1.8);await S.wait(1.8);await sFight(S,a,b)})},
 };
-const EVW=[['argue',4],['pong',2],['coffee',2],['printer',2],['outage',1],['gossip',3],['prank',3],['cat',2],['deadline',2],['eureka',2],['crush',1],['sulk',2],['pizza',.5]];
+const EVW=[['gong',2],['plov',1],['visitor',2],['spar',1],['argue',4],['pong',2],['coffee',2],['printer',2],['outage',1],['gossip',3],['prank',3],['cat',2],['deadline',2],['eureka',2],['crush',1],['sulk',2],['pizza',.5]];
 let dirT=10;
 function director(dt){dirT-=dt;if(dirT>0)return;dirT=rand(10,20);if(scenes.size>=3||mode||props.night)return;
   let tot=EVW.reduce((s,e)=>s+e[1],0),r=Math.random()*tot;for(const[n,w]of EVW){r-=w;if(r<=0){try{EV[n]()}catch(e){console.error(e)}return}}}
 
 function makeCourier(){const c=dressUp(Object.assign(baseBody(ENTRY.x,ENTRY.y,tileDest(ENTRY.x,ENTRY.y)),{id:100+extras.length,name:'Kuryer',pers:'jiddiy',home:null,keys:[],shirt:'#e94f64'}),false);c.style=0;c.hair='#e94f64';extras.push(c);return c}
+function sCanteen(byBoss){
+  const cook=agents.find(a=>a.team==='cook'&&!a.hidden);
+  runScene(cook?[cook]:[],async S=>{if(cook){freeAgent(cook);S.adopt(cook);await S.walk(cook,5,42,false,'l');S.say(cook,'Plov tayyor!!',2.4);jump(cook)}
+    const seats=shuffle(spots.filter(s=>s.act==='eat'&&!s.taken));const ppl=byBoss?agents.filter(a=>!a.hidden&&a!==cook):freeList().slice(0,12);
+    ppl.forEach((a,i)=>{if(byBoss)freeAgent(a);if(!S.join(a,false))return;const st=seats.pop();if(st){a.faceOverride=null;goTo(a,st,'scene',999,true)}else{const t=randomTile('canteen');if(t)S.move(a,t.x,t.y,true)}if(i<7)say(a,pick(['Plov!!','Osh!','Birinchi menga!','Qorin och!']),1.8,true)});
+    await S.wait(4);ppl.forEach(a=>{if(S.in(a))a.act='eat'});await S.wait(10);ppl.forEach((a,i)=>{if(S.in(a)&&i<6)say(a,pick(['Mazali!','Rahmat oshpaz!','To\'ydim','Yana bir kosa!']),2,true)});
+    if(cook)S.say(cook,'Osh bo\'lsin!',2);await S.wait(4)});
+}
 function sPizza(byBoss,food='Pitsa'){
   const cr=makeCourier();
   runScene([cr],async S=>{say(cr,food+' keldi!',2,true);await S.walk(cr,35,20,true,'d');props.pizza=40;S.say(cr,'Marhamat!',1.6);
@@ -404,8 +460,8 @@ const BOSS={
   forgive(list){list.forEach(a=>{a.returnNow=true;hearts(a)})},
   fire(list){mode='fire';modeT=9;list.forEach((a,i)=>{if(a.pers==='jiddiy'){const t=randomTile('all');if(t)goTo(a,t,'stand',4);if(i<10)say(a,'Tinch, tinch…',2,true);return}
       if(a.pers==='hazil'&&Math.random()<.5){if(i<10)say(a,'Marshmallow bormi?',2.2,true)}const t=randomTile('all');if(t)goTo(a,t,'flee',.1,true);if(i<10&&a.pers!=='hazil')say(a,pick(["Yong'in!!","Qochinglar!","Onajon!","Noutbukim!"]),2.2,true)})},
-  sleep(list){const sl=list.filter(a=>a.act==='sleep');if(!sl.length){const x=pick(list.filter(a=>a.pers==='xushomad'))||pick(list);if(x)say(x,'Hech kim uxlamayapti, boss!',2.4,true);return}
-    sl.forEach(a=>{jump(a,1.8);a.act='work';a.timer=rand(14,20);a.panic=12;say(a,'Uxlamadim!!',2,true)});
+  sleep(list){const sl=list.filter(a=>a.act==='sleep'||a.act==='nap');if(!sl.length){const x=pick(list.filter(a=>a.pers==='xushomad'))||pick(list);if(x)say(x,'Hech kim uxlamayapti, boss!',2.4,true);return}
+    sl.forEach(a=>{jump(a,1.8);a.panic=12;say(a,'Uxlamadim!!',2,true);if(a.act==='nap')sendHome(a,true);else{a.act='work';a.timer=rand(14,20)}});
     const s0=sl[0];nearest(s0,2).forEach(o=>{faceTo(o,s0);say(o,pick(['U uxlayotgan edi!','Ko\'rdim!','Hihi']),2,true);setTimeout(()=>{if(!o.scene)o.faceOverride=null},3000)})},
   quiet(list){quietT=10;list.slice(0,4).forEach(a=>{a.bubble={text:'…',t:2}})},
   birthday(list,{named,names}){const hero=named?names[0]:null;props.cake=26;
@@ -413,7 +469,10 @@ const BOSS={
       const ppl=agents.filter(a=>!a.hidden&&a!==hero);ppl.forEach(a=>{freeAgent(a);S.join(a,false);const t=nearTile(54,20,4);S.move(a,t.x,t.y,true).then(()=>{if(S.in(a))faceTo(a,{x:54,y:19})})});
       await S.wait(4);mode='confetti';modeT=5;burst('conf',120);for(let i=0;i<14;i++)part('note',54*T+rand(-60,60),19*T,rand(-10,10),-25,1.6,pick(CONF));
       ppl.forEach((a,i)=>{if(i<8)say(a,pick(["Tug'ilgan kuning bilan!","Tabriklaymiz!","Tort!!"]),2.4,true)});if(hero){S.say(hero,'Rahmat!!',2.4);hearts(hero,8)}await S.wait(6)})},
-  food(list,{text}){const f=text.includes('plov')||text.includes(' osh')?'Plov':text.includes('lavash')?'Lavash':text.includes('shashlik')?'Shashlik':'Pitsa';sPizza(true,f)},
+  food(list,{text}){if(/ (plov|osh|ovkat|ovqat|tushlik|obed|kushat)/.test(text)){sCanteen(true);return}const f=text.includes('lavash')?'Lavash':text.includes('shashlik')?'Shashlik':'Pitsa';sPizza(true,f)},
+  sport(list,{named}){list.forEach((a,i)=>{const g=spots.filter(s=>['run','boxing','yoga'].includes(s.act)&&!s.taken);if(a.pers==='dangasa'&&Math.random()<.6){if(talky(list,i,named))say(a,'Sport? Menmi?!',2,true);return}
+      if(g.length&&Math.random()<.4){const s=pick(g);goTo(a,s,s.act,rand(12,18),true)}else{stay(a,'yoga',8);a.fx.jump=a.fx.jumpMax=.4}if(talky(list,i,named))say(a,pick(['Bir-ikki!','Zaryadka!','Uff, qiyin','Mushaklar!']),2,true)})},
+  sale(list){const team=agents.filter(a=>a.team==='sales'&&!a.hidden);team.forEach(a=>{freeAgent(a);a.panic=10;if(atHome(a)){a.act='work';a.timer=15}else sendHome(a,true);say(a,pick(['Qo\'ng\'iroq qilyapman!','Allo!','Mijoz, kuting!']),2,true)});setTimeout(()=>EV.gong(),4500)},
   home(list){runScene([],async S=>{const ppl=agents.filter(a=>!a.hidden);ppl.forEach((a,i)=>{freeAgent(a);S.join(a,false);if(i<10)say(a,pick(['Xayr boss!','Ertagacha!','Ura, uyga!']),2.2,true);
       S.move(a,ENTRY.x,ENTRY.y,a.pers==='dangasa').then(()=>{if(S.in(a))a.hidden=true})});
       for(let i=0;i<30&&ppl.some(a=>S.in(a)&&!a.hidden);i++)await S.wait(.5);props.night=5;toast('Ertasi kuni…');await S.wait(5);props.night=0;
@@ -452,7 +511,8 @@ function updateAgent(a,dt){
   if(a.scene||a.hidden)return;
   a.timer-=dt;
   if(a.act==='flee'){if(mode==='fire'){const t=randomTile('all');if(t)goTo(a,t,'flee',.1,true)}else{sendHome(a);if(Math.random()<.3)say(a,pick(['Hazil ekan…','Uf, yurak…',"Qo'rqitdingiz!"]),2.4,true)}return}
-  if(a.act==='sleep'&&Math.random()<dt*1.2)part('z',a.x*T+12,a.y*T-6,rand(2,6),-12,1.6,'#ffffff');
+  if(a.act==='boxing'&&Math.random()<dt*1.5)part('conf',a.x*T+8,a.y*T-12,rand(-15,15),rand(-25,-10),.5,'#ffcf4a');
+  if((a.act==='sleep'||a.act==='nap')&&Math.random()<dt*1.2)part('z',a.x*T+12,a.y*T-6,rand(2,6),-12,1.6,'#ffffff');
   if(a.panic>0&&a.act==='work'&&Math.random()<dt*2)part('sweat',a.x*T+(Math.random()<.5?3:13),a.y*T-6,rand(-6,6),-10,.7,'#7fd0ff');
   if(a.act==='dance'&&Math.random()<dt*1.4)part('note',a.x*T+8,a.y*T-8,rand(-10,10),-22,1.4,pick(CONF));
   if(!a.bubble&&Math.random()<dt*.04){const l=L[a.act]||(a.act==='work'&&Math.random()<.4?L.think:null);if(l)say(a,pick(l))}
@@ -503,12 +563,18 @@ function drawFloors(){
     else if(f==='meet'){R(px,py,T,T,'#3b5c86');if(h%4===0)R(px+(h%13),py+((h>>4)%13),2,2,'#45699a')}
     else if(f==='design'){R(px,py,T,T,y%2?'#ecdcc0':'#e4d1b2');if((x*5+(y%2)*3)%4===0)R(px,py,1,T,'#d4bf9b');R(px,py+T-1,T,1,'#d8c4a1')}
     else if(f==='boss'){R(px,py,T,T,'#2d5a4c');if(h%4===0)R(px+(h%13),py+((h>>4)%13),2,2,'#35675a')}
+    else if(f==='sales'){R(px,py,T,T,(x+y)%2?'#4a5a73':'#475670');if(h%5===0)R(px+(h%12),py+((h>>4)%12),2,2,'#55667f')}
+    else if(f==='gym'){R(px,py,T,T,'#2b2f33');R(px,py,T,1,'#24272b');R(px,py,1,T,'#24272b');if(h%6===0)R(px+(h%13),py+((h>>4)%13),2,1,'#3a3f45')}
+    else if(f==='recep'){R(px,py,T,T,(x+y)%2?'#ece9f2':'#dcd8e6');if(h%7===0)R(px+(h%11),py+((h>>3)%11),5,1,'#c9c3d8')}
+    else if(f==='canteen'){R(px,py,T,T,(x+y)%2?'#f3d9a8':'#e8c98f');R(px,py,T,1,'#d6b47a');R(px,py,1,T,'#d6b47a')}
+    else if(f==='nap'){R(px,py,T,T,'#352a52');if(h%3===0)R(px+(h%12),py+((h>>5)%12),2,2,'#40335f')}
+    else if(f==='bill'){R(px,py,T,T,y%2?'#6b3a2a':'#633526');if((x*3+(y%2)*5)%4===0)R(px,py,1,T,'#552d20');R(px,py+T-1,T,1,'#58301f')}
   }
   // rugs
   rug(23,21,6,3,'#5b7cfa','#7b98ff'); rug(50,16,9,7,'#3d2a4f','#52386a'); rug(46,28,14,9,'#7a2f3a','#93424e'); rug(3,28,15,7,'#2e486c','#35537c');
   // window light on floors
   X.fillStyle='rgba(255,236,190,.09)';
-  for(const wx of[3,9,21,27,34,40]){X.beginPath();X.moveTo(wx*T,2*T);X.lineTo(wx*T+2*T,2*T);X.lineTo(wx*T+2*T+26,7*T);X.lineTo(wx*T+26,7*T);X.fill()}
+  for(const wx of[3,9,21,27,34,40,66,72]){X.beginPath();X.moveTo(wx*T,2*T);X.lineTo(wx*T+2*T,2*T);X.lineTo(wx*T+2*T+26,7*T);X.lineTo(wx*T+26,7*T);X.fill()}
 }
 function rug(x,y,w,h,a,b){R(x*T+4,y*T+4,w*T-8,h*T-8,a);R(x*T+8,y*T+8,w*T-16,h*T-16,b);R(x*T+12,y*T+12,w*T-24,h*T-24,a)}
 function drawWalls(){
@@ -520,9 +586,9 @@ function drawWalls(){
     if(below&&y>1){R(px,py+5,T,11,'#5d578c');R(px,py+5,T,2,'#7a74ad');R(px,py+T-3,T,3,'#3a3460')}
     else{R(px+2,py,T-4,T,'#36315a');}
   }
-  R(0,0,WW,4,'#221e38');R(0,19*T-2,T,2*T+2,'#3a2418');R(2,19*T,T-4,2*T-2,'#7a5038');R(T-6,20*T,2,3,'#ffcf4a');
+  R(0,0,WW,4,'#221e38');R(79*T,31*T-2,T,3*T+4,'#3a2418');R(79*T+2,31*T,T-4,3*T,'#9fd6ff');R(79*T+2,31*T,T-4,4,'#cdeeff');R(79*T+7,31*T,2,3*T,'#3a2418');R(0,40*T,T,1,'#000');
   // windows
-  for(const wx of[3,9,21,27,34,40]){const px=wx*T,py=2;R(px-1,py,2*T+2,T+12,'#2d2948');R(px+1,py+2,2*T-2,T+8,'#9fd6ff');R(px+1,py+2,2*T-2,8,'#cdeeff');R(px+T-1,py+2,2,T+8,'#2d2948');R(px+1,py+14,2*T-2,2,'#2d2948');R(px+4,py+4,5,2,'#fff');R(px-2,py+T+10,2*T+4,3,'#e6e0f5')}
+  for(const wx of[3,9,21,27,34,40,66,72]){const px=wx*T,py=2;R(px-1,py,2*T+2,T+12,'#2d2948');R(px+1,py+2,2*T-2,T+8,'#9fd6ff');R(px+1,py+2,2*T-2,8,'#cdeeff');R(px+T-1,py+2,2,T+8,'#2d2948');R(px+1,py+14,2*T-2,2,'#2d2948');R(px+4,py+4,5,2,'#fff');R(px-2,py+T+10,2*T+4,3,'#e6e0f5')}
   // neon TASMA
   R(12*T-4,6,7*T+8,22,'#1a1530');R(12*T-2,8,7*T+4,18,'#221c3d');
   X.font='700 16px Silkscreen, monospace';X.textBaseline='alphabetic';X.fillStyle='rgba(255,207,74,.35)';X.fillText('TASMA',12*T+9,24);X.fillStyle='#ffcf4a';X.fillText('TASMA',12*T+8,23);
@@ -560,9 +626,45 @@ function deskDraw(d){
 }
 function mon(x,y){R(x,y,18,13,'#1c1a2a');R(x+7,y+13,4,2,'#3a3954');R(x+5,y+15,8,1,'#3a3954')}
 function chairSeat(x,y){R(x*T+3,y*T+3,10,9,'#262438');R(x*T+4,y*T+4,8,6,'#3a3858');R(x*T+7,y*T+12,2,3,'#1c1a2a')}
+function drawNewRooms(){
+  // sales: gong + phones + target board
+  {const px=77*T,py=3*T;R(px+1,py-14,2,28,'#5a3b2a');R(px+13,py-14,2,28,'#5a3b2a');R(px,py-14,16,2,'#5a3b2a');R(px+2,py-10,12,12,'#c9a227');R(px+4,py-8,8,8,'#e8c547');R(px+6,py-6,4,4,'#c9a227')}
+  {const px=67*T,py=1*T;R(px,py+2,4*T,12,'#f4f1ec');R(px+2,py+4,4*T-4,1,'#e4572e');X.font='700 8px Silkscreen, monospace';X.fillStyle='#2f3a5a';X.fillText('PLAN 150%',px+8,py+12)}
+  desks.filter(d=>d.kind==='sales').forEach(d=>{R(d.x*T+5,d.y*T+14,6,6,'#2d2948');R(d.x*T+6,d.y*T+13,4,2,'#e4572e')});
+  // gym
+  for(const s of spots.filter(s=>s.tread)){const px=s.x*T,py=s.y*T;shadowRect(px,py-4,T,T+6);R(px+1,py-6,14,T+8,'#3b3f55');R(px+3,py-4,10,T+4,'#16151f');for(let k=0;k<4;k++)R(px+3,py-2+k*5,10,1,'#2a2a33');R(px+2,py-10,12,5,'#4a4f69');R(px+5,py-9,6,3,'#4cc9f0')}
+  for(const s of spots.filter(s=>s.mat)){R(s.x*T-4,s.y*T+2,T+8,T-2,'#ef6f9b');R(s.x*T-2,s.y*T+4,T+4,T-6,'#f48fb1')}
+  {const px=75*T,py=18*T;R(px+7,py-20,2,10,'#8f8a99');R(px+3,py-11,10,22,'#7a2f3a');R(px+3,py-11,10,3,'#93424e');R(px+4,py+8,8,3,'#5a1f2a')}
+  {const px=77*T,py=21*T;R(px+1,py,14,3*T,'#3b3f55');for(let k=0;k<5;k++){R(px+2,py+3+k*9,4,5,'#16151f');R(px+10,py+3+k*9,4,5,'#16151f');R(px+5,py+5+k*9,6,1,'#9aa0b0')}}
+  R(65*T,16*T-12,10*T,10,'#bfe6ff');R(65*T,16*T-12,10*T,2,'#e8f6ff');
+  // reception
+  {const px=68*T,py=29*T;shadowRect(px,py,5*T,T);R(px,py-3,5*T,T+3,'#5b7cfa');R(px,py-3,5*T,4,'#f4f1ec');R(px+4,py+6,5*T-8,2,'#7b98ff');mon(px+2*T+2,py-15);R(px+10,py-6,8,4,'#ffcf4a');
+    X.font='700 8px Silkscreen, monospace';X.fillStyle='#ffffff';X.fillText('TASMA',px+24,py+13)}
+  chairSeat(70,28);
+  sofa(65,34,3,'#5b7cfa');
+  {const px=73*T,py=35*T;shadowRect(px,py,4*T,T);R(px+2,py+3,4*T-4,9,'#8a5a3a');R(px+2,py+3,4*T-4,2,'#a5704a');R(px+10,py+5,10,4,'#ffffff');R(px+40,py+4,5,6,'#3ea65e')}
+  R(66*T,25*T+5,5*T,10,'#2d2948');R(66*T+2,25*T+7,5*T-4,6,'#3fbf6f');
+  // canteen
+  {const px=3*T,py=41*T;shadowRect(px,py,2*T,2*T);R(px+2,py+6,28,22,'#16151f');R(px,py+4,32,8,'#4a4a58');R(px+4,py+6,24,5,'#c98a3a');R(px+8,py+7,6,2,'#f3d27a');R(px+5,py+22,22,4,'#ff8c42')}
+  {const px=1*T,py=41*T;R(px,py,T,4*T,'#9aa0b0');R(px,py,T,3,'#c5c9d6');for(let k=0;k<4;k++)R(px+3,py+6+k*14,10,7,'#e8eef5')}
+  for(const tx of[9,18]){const px=tx*T,py=42*T;shadowRect(px,py,6*T,2*T);R(px+1,py+2,6*T-2,2*T-6,'#b5713e');R(px+1,py+2,6*T-2,2,'#cf8a52');for(let i=0;i<6;i++){R(px+i*T+4,py+6,8,8,'#f4f1ec');R(px+i*T+6,py+8,4,4,'#e8a33a')}}
+  spots.filter(s=>s.act==='eat').forEach(s=>chairSeat(s.x,s.y));
+  X.font='700 8px Silkscreen, monospace';X.fillStyle='#7a2f3a';X.fillText('OSHXONA',12*T,39*T+14);
+  // nap room
+  spots.filter(s=>s.bed).forEach(s=>{const px=s.x*T,py=s.y*T;shadowRect(px-6,py-6,T+12,2*T);R(px-6,py-8,T+12,2*T,'#5a4a7a');R(px-5,py-7,T+10,8,'#f4f1ec');R(px-5,py+1,T+10,2*T-11,'#7b98ff');R(px-5,py+1,T+10,2,'#9ab0ff')});
+  for(let i=0;i<12;i++){const h=hsh(i,40);R(33*T+(h%(18*T)),39*T+6+(h>>6)%5,2,2,'#fff6b0')}
+  // billiard
+  {const px=58*T,py=42*T;shadowRect(px,py,5*T,3*T);R(px,py,5*T,3*T,'#5a3b2a');R(px+4,py+4,5*T-8,3*T-8,'#1f7a4f');R(px+4,py+4,5*T-8,2,'#24915e');
+    for(const[cx,cy]of[[3,3],[38,3],[76,3],[3,44],[38,44],[76,44]])R(px+cx,py+cy,3,3,'#16151f');
+    const b=['#ffcf4a','#e4572e','#5b7cfa','#3fbf6f','#b26bff','#ffffff'];b.forEach((c,i)=>R(px+30+(i%3)*5,py+18+Math.floor(i/3)*5,3,3,c))}
+  {const px=70*T,py=41*T;shadowRect(px,py,7*T,T);R(px,py-4,7*T,T+4,'#3a2418');R(px,py-4,7*T,4,'#7a5038');for(let i=0;i<9;i++)R(px+6+i*12,py-14,4,10,['#3fbf6f','#e4572e','#ffcf4a','#4cc9f0'][i%4])}
+  spots.filter(s=>s.stool).forEach(s=>{R(s.x*T+4,s.y*T+4,8,6,'#e4572e');R(s.x*T+7,s.y*T+10,2,5,'#2d2948')});
+  {const px=55*T,py=39*T;R(px,py+2,14,14,'#f4f1ec');R(px+2,py+4,10,10,'#e4572e');R(px+4,py+6,6,6,'#f4f1ec');R(px+6,py+8,2,2,'#e4572e')}
+}
 function drawFurniture(){
   desks.forEach(deskDraw);
-  [[1,2],[30,2],[1,24],[30,24],[32,14],[46,14],[48,14],[32,24],[41,24],[62,24],[1,26],[20,26],[1,38],[20,38],[22,26],[41,26],[22,38],[43,26],[62,38],[62,30]].forEach(([x,y])=>plant(x,y));
+  [[1,2],[30,2],[1,24],[30,24],[32,14],[46,14],[48,14],[32,24],[41,24],[62,24],[1,26],[20,26],[1,38],[20,38],[22,26],[41,26],[22,38],[43,26],[62,38],[62,30],[64,2],[78,14],[64,24],[78,16],[64,26],[78,38],[64,38],[1,46],[30,40],[32,46],[51,40],[53,46],[78,46]].forEach(([x,y])=>plant(x,y));
+  drawNewRooms();
   // open space: cooler, printer, sofa
   {const px=2*T,py=22*T;shadowRect(px+3,py+2,10,12);R(px+4,py+3,8,12,'#e8eef5');R(px+4,py-8,8,11,'#6fb6ff');R(px+5,py-7,2,8,'#a8d6ff');R(px+6,py+8,4,2,'#5b7cfa')}
   {const px=14*T,py=23*T;shadowRect(px+1,py,30,14);R(px+1,py+1,30,13,'#cfd2dc');R(px+1,py+1,30,4,'#9aa0b0');R(px+6,py+8,16,3,'#ffffff')}
@@ -688,15 +790,15 @@ function drawPerson(a,t){
   X.fillStyle='rgba(20,10,30,.28)';X.fillRect(gx+3,gy+T-3,10,3);X.fillRect(gx+4,gy+T-4,8,1);
   const p=[], d=[];
   const S=(x,y,w,h,c)=>p.push([ox+x,oy+y,w,h,c]);const Dt=(x,y,w,h,c)=>d.push([ox+x,oy+y,w,h,c]);
-  const run=Math.floor(a.anim*(a.run?16:9))%2;
-  const armsUp=['dance','cheer'].includes(a.act)&&(a.act==='cheer'||Math.floor(t*4+a.id)%2)||(a.act==='scared'&&Math.floor(t*8)%2);
+  const jog=!walking&&a.act==='run';const run=Math.floor(a.anim*(a.run||jog?16:9))%2;
+  const armsUp=a.act==='yoga'&&!walking||['dance','cheer'].includes(a.act)&&(a.act==='cheer'||Math.floor(t*4+a.id)%2)||(a.act==='scared'&&Math.floor(t*8)%2);
   // legs
-  if(!sit){const l1=walking&&run?3:4,l2=walking&&!run?3:4;S(3,15,3,l1,a.pants);S(6,15,3,l2,a.pants);Dt(3,14+l1,3,1,'#1c1830');Dt(6,14+l2,3,1,'#1c1830')}
+  if(!sit){const mv=walking||jog;const l1=mv&&run?3:4,l2=mv&&!run?3:4;S(3,15,3,l1,a.pants);S(6,15,3,l2,a.pants);Dt(3,14+l1,3,1,'#1c1830');Dt(6,14+l2,3,1,'#1c1830')}
   else if(face!=='u'){S(3,15,3,2,a.pants);S(6,15,3,2,a.pants)}
   // torso + arms
   S(2,10,8,6,a.shirt);
   if(armsUp){S(1,5,1,6,a.shirtD);S(10,5,1,6,a.shirtD);Dt(1,4,1,1,a.skin);Dt(10,4,1,1,a.skin)}
-  else if(face==='u'&&a.act==='work'&&sit){const b=Math.floor(t*(a.panic>0?18:7))%2;S(1,10+b,1,3,a.shirtD);S(10,11-b,1,3,a.shirtD)}
+  else if(face==='u'&&!walking&&(a.act==='work'&&sit||['boxing','eat','cook'].includes(a.act))){const b=Math.floor(t*(a.panic>0||a.act==='boxing'?18:a.act==='eat'?4:7))%2;S(1,10+b,1,3,a.shirtD);S(10,11-b,1,3,a.shirtD)}
   else if(face==='l'||face==='r'){const sw=walking?(run?1:-1):0;S(face==='r'?5:6,11+sw,1,4,a.shirtD);Dt(face==='r'?5:6,15+sw,1,1,a.skin)}
   else{S(1,11,1,4,a.shirtD);S(10,11,1,4,a.shirtD);if(face!=='u'){Dt(1,15,1,1,a.skin);Dt(10,15,1,1,a.skin)}}
   // head
@@ -717,7 +819,7 @@ function drawPerson(a,t){
     // face details
     const e='#1c1830';const ex=face==='r'?[6,8]:face==='l'?[3,5]:[4,7];
     const scared=a.act==='scared'||a.dizzy>0||a.panic>0||mode==='fire'||a.act==='flee';
-    if(a.act==='sleep'){Dt(ex[0],6,1,1,e);Dt(ex[1],6,1,1,e)}
+    if(a.act==='sleep'||a.act==='nap'){Dt(ex[0],6,1,1,e);Dt(ex[1],6,1,1,e)}
     else if(scared){Dt(ex[0],5,1,2,'#fff');Dt(ex[1],5,1,2,'#fff');Dt(ex[0],6,1,1,e);Dt(ex[1],6,1,1,e)}
     else if(a.blink<0){Dt(ex[0],6,1,1,e);Dt(ex[1],6,1,1,e)}
     else{Dt(ex[0],5,1,2,e);Dt(ex[1],5,1,2,e)}
@@ -864,103 +966,139 @@ function frame(now){
 
 /* ================= microphone + understanding ================= */
 const micBtn=document.getElementById('mic'),wrap=document.getElementById('micWrap'),ring=document.getElementById('ring'),heard=document.getElementById('heard');
-let micState='off',stream=null,actx=null,analyser=null,buf=null,rec=null,level=0,lastLoud=0,pendingLoud=0,lastCmdAt=0,heardTimer=null,loudness=0;
+const langBtn=document.getElementById('lang'),kbBtn=document.getElementById('kb'),form=document.getElementById('typeForm'),input=document.getElementById('typeIn');
+let micState='off',stream=null,actx=null,analyser=null,buf=null,rec=null,level=0,lastLoud=0,pendingLoud=0,lastCmdAt=0,heardTimer=null,loudness=0,speaking=false,lastResultAt=0,restarts=0;
+const LANGS=[['uz-UZ','UZ'],['ru-RU','RU']];
+let langIdx=0;try{const v=localStorage.getItem('ishxona-lang');if(v!==null)langIdx=+v%LANGS.length}catch(e){}
+langBtn.textContent=LANGS[langIdx][1];
 const CYR={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'j','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'x','ц':'ts','ч':'ch','ш':'sh','щ':'sh','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','ў':'o','қ':'q','ғ':'g','ҳ':'h'};
-function norm(s){s=s.toLowerCase().replace(/[а-яёўқғҳ]/g,c=>CYR[c]??c);s=s.replace(/[ʻʼ‘’`'´]/g,'').replace(/[^a-z0-9 ]/g,' ');return' '+s.replace(/\s+/g,' ').trim()+' '}
-const INTENTS=[
-  ['stopfight',[' urishma',' urushma',' toxta',' bas ',' bas qil',' tinchlan',' ajrat',' xvatit',' stop',' ostanov',' janjal qilma']],
-  ['forgive',[' qayt',' kechirdim',' kechiraman',' vozvrash']],
-  ['fear',[' jarima',' shtraf',' boshatam',' boshataman',' ishdan boshat',' jazo',' nakaz',' uvol',' haydayman']],
-  ['fire',[' yongin',' olov',' pojar',' fire',' yonyapti']],
-  ['sleep',[' uxla',' spi',' spat',' uyqu']],
-  ['howru',[' qalay',' nima gap',' yaxshimisiz',' yaxshimisizlar',' kak dela',' kak vy',' tinchmi',' charchadingiz',' nima qilyap']],
-  ['love',[' yaxshi koraman',' sevaman',' lyublyu']],
-  ['praise',[' rahmat',' barakalla',' molodets',' molodsy',' spasibo',' zor',' ofarin',' yaxshi ishla',' super',' kuchli',' malades']],
-  ['birthday',[' tugilgan kun',' tugulgan kun',' den rojd',' birthday',' tort']],
-  ['food',[' pizza',' pitsa',' pits',' plov',' osh ',' ovqat',' tushlik',' obed',' kushat',' shashlik',' lavash']],
-  ['bonus',[' bonus',' mukofot',' oylik',' premiya',' zarplat',' maosh',' pul ']],
-  ['dance',[' raqs',' tans',' dans',' musiqa',' muzyk',' bazm',' disko']],
-  ['meet',[' majlis',' yigil',' uchrashuv',' planerk',' sobrani',' meeting',' soveshan']],
-  ['home',[' uyga',' ish tugadi',' domoy',' ketinglar',' javob ber']],
-  ['break',[' tanaffus',' dam ol',' pereryv',' otdyx',' otdykh',' choy',' qahva',' kofe',' perekur']],
-  ['joke',[' hazil',' latifa',' anekdot',' kuldir',' shutk',' kulgi']],
-  ['clean',[' tozala',' yigishtir',' ubor',' chist']],
-  ['quiet',[' jim',' tixo',' shovqin',' gapirma',' ovozingiz']],
-  ['greet',[' salom',' assalom',' privet',' zdravst',' xayrli tong',' hayrli tong',' hello',' hi ']],
-  ['blame',[' kim qildi',' kim buzdi',' kim aybdor',' kto sdelal',' kim ']],
-  ['work',[' ishla',' ishga',' tez',' harakat',' qimirla',' rabot',' bystr',' davay',' work',' dedlayn',' deadline',' bajar',' ishlamayapsiz',' dangasa']]
+function canon(w){return w.replace(/q/g,'k').replace(/x/g,'h').replace(/(.)\1+/g,'$1')}
+function norm(s){s=s.toLowerCase().replace(/[а-яёўқғҳ]/g,c=>CYR[c]??c);s=s.replace(/[ʻʼ‘’`'´]/g,'').replace(/[^a-z0-9 ]/g,' ');return' '+canon(s.replace(/\s+/g,' ').trim())+' '}
+function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;let p=Array.from({length:n+1},(_,i)=>i);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+const RAW_INTENTS=[
+  ['stopfight',['urishma','urushma','toxta','bas ','bas qil','tinchlan','ajrat','xvatit','hvatit','stop','ostanov','janjal']],
+  ['forgive',['qayt','kechirdim','kechiraman','vozvrash']],
+  ['fear',['jarima','shtraf','boshatam','boshataman','ishdan boshat','jazo','nakaz','uvol','haydayman']],
+  ['fire',['yongin','olov','pojar','pozhar','fire','yonyapti']],
+  ['sleep',['uxla','spish','spite','spat','uyqu']],
+  ['howru',['qalay','nima gap','yaxshimisiz','yaxshimisizlar','kak dela','kak vy','tinchmi','charchadingiz','nima qilyap','nima ish']],
+  ['love',['yaxshi koraman','sevaman','lyublyu']],
+  ['praise',['rahmat','barakalla','molodets','molodsy','spasibo','zor ','ofarin','yaxshi ishla','super','kuchli','malades','qoyil']],
+  ['birthday',['tugilgan kun','tugulgan kun','den rojd','birthday','tort ']],
+  ['food',['pizza','pitsa','pits','plov','osh ','ovqat','tushlik','obed','kushat','shashlik','lavash','yegani','qorin']],
+  ['bonus',['bonus','mukofot','oylik','premiya','zarplat','maosh','pul ']],
+  ['sale',['sotuv','sotinglar','sotish','prodaj','klient','qongiroq']],
+  ['sport',['sport','zaryadka','mashq','trenirov','yugur','gimnast']],
+  ['dance',['raqs','raks','tans','dans','musiqa','muzyk','bazm','disko']],
+  ['meet',['majlis','yigil','uchrashuv','planerk','sobrani','meeting','soveshan']],
+  ['home',['uyga','ish tugadi','domoy','ketinglar','javob ber']],
+  ['break',['tanaffus','dam ol','pereryv','otdyx','otdyh','choy','qahva','kofe','perekur']],
+  ['joke',['hazil','latifa','anekdot','kuldir','shutk','kulgi']],
+  ['clean',['tozala','yigishtir','ubor','chist']],
+  ['quiet',['jim ','tixo','tiho','shovqin','gapirma','ovozingiz']],
+  ['greet',['salom','assalom','privet','zdravst','xayrli tong','hayrli tong','hello','hi ']],
+  ['blame',['kim qildi','kim buzdi','kim aybdor','kto sdelal','kim ']],
+  ['work',['ishla','ishga','tez','tezroq','harakat','qimirla','rabot','bystr','davay','work','dedlayn','deadline','bajar','dangasa']]
 ];
-const GROUPS=[[' dasturchi',a=>a.team==='dev'],[' programmist',a=>a.team==='dev'],[' dizayner',a=>a.team==='dsg'],[' marketolog',a=>a.team==='mkt'],[' targetolog',a=>a.team==='mkt'],[' smm',a=>a.team==='mkt'],[' studiya',a=>a.team==='std'],[' operator',a=>a.team==='std'],[' qizlar',a=>a.fem],[' devushk',a=>a.fem],[' xonimlar',a=>a.fem],[' yigitlar',a=>!a.fem],[' parni',a=>!a.fem],[' erkaklar',a=>!a.fem]];
-const LABEL={stopfight:"to'xtatish",forgive:'qaytish',fear:'jarima',fire:"yong'in",sleep:'uyqu tekshiruvi',howru:'hol-ahvol',love:'mehr',praise:'maqtov',birthday:"tug'ilgan kun",food:'ovqat',bonus:'bonus',dance:'raqs',meet:'majlis',home:'uyga',break:'tanaffus',joke:'latifa',clean:'tozalash',quiet:'jimlik',greet:'salom',blame:'aybdor qidirish',work:'ishga',call:'chaqirish',confused:'?',fireperson:'ishdan haydash'};
-const MOVERS=['work','break','meet','dance','bonus','fear','fire','fireperson','birthday'];
+const INTENTS=RAW_INTENTS.map(([n,ws])=>[n,ws.map(w=>{const exact=w.endsWith(' ');const c=canon(norm(w).trim());return{w:c,exact,multi:c.includes(' ')}})]);
+function hit(s,toks,k){
+  if(k.multi)return s.includes(' '+k.w);
+  if(k.exact)return toks.includes(k.w);
+  return toks.some(t=>t.startsWith(k.w)||(k.w.length>=5&&t.length>=k.w.length-1&&lev(t.slice(0,k.w.length),k.w)<=1));
+}
+agents.forEach(a=>{a.ckeys=[...new Set(a.keys.map(k=>canon(norm(k).trim())))]});
+function nameHit(toks,s,a){return a.ckeys.some(k=>k.includes(' ')?s.includes(' '+k):toks.some(t=>!t.startsWith('asalom')&&(t===k||(t.startsWith(k)&&t.length<=k.length+4)||(k.length>=5&&lev(t.slice(0,k.length),k)<=1))))}
+const GROUPS=[['dasturchi',a=>a.team==='dev'],['programmist',a=>a.team==='dev'],['dizayner',a=>a.team==='dsg'],['marketolog',a=>a.team==='mkt'],['targetolog',a=>a.team==='mkt'],['smm',a=>a.team==='mkt'],['studiya',a=>a.team==='std'],['operator',a=>a.team==='std'],['sotuvchi',a=>a.team==='sales'],['menejer',a=>a.team==='sales'],['oshpaz',a=>a.team==='cook'],['povar',a=>a.team==='cook'],['qizlar',a=>a.fem],['devushk',a=>a.fem],['xonimlar',a=>a.fem],['yigitlar',a=>!a.fem],['parni',a=>!a.fem],['erkaklar',a=>!a.fem]].map(([w,f])=>[canon(norm(w).trim()),f]);
+const LABEL={stopfight:"to'xtatish",forgive:'qaytish',fear:'jarima',fire:"yong'in",sleep:'uyqu tekshiruvi',howru:'hol-ahvol',love:'mehr',praise:'maqtov',birthday:"tug'ilgan kun",food:'ovqat',bonus:'bonus',sale:'sotuv',sport:'sport',dance:'raqs',meet:'majlis',home:'uyga',break:'tanaffus',joke:'latifa',clean:'tozalash',quiet:'jimlik',greet:'salom',blame:'aybdor qidirish',work:'ishga',call:'chaqirish',confused:'tushunmadi',fireperson:'ishdan haydash'};
+const MOVERS=['work','break','meet','dance','bonus','fear','fire','fireperson','birthday','sport'];
 let lastIntentAt={};
 function understand(raw){
-  const s=norm(raw);
-  const named=agents.filter(a=>a.keys.some(k=>s.includes(' '+k)));
-  let group=null;for(const[w,f]of GROUPS)if(s.includes(w)){group=f;break}
-  let intent=null;for(const[n,ws]of INTENTS)if(ws.some(w=>s.includes(w))){intent=n;break}
+  const s=norm(raw);const toks=s.trim().split(' ').filter(Boolean);
+  const named=agents.filter(a=>nameHit(toks,s,a));
+  let group=null;for(const[w,f]of GROUPS)if(toks.some(t=>t.startsWith(w))){group=f;break}
+  let intent=null;for(const[n,ks]of INTENTS)if(ks.some(k=>hit(s,toks,k))){intent=n;break}
   if(intent==='fear'&&named.length&&(s.includes(' ishdan')||s.includes(' boshat')||s.includes(' uvol')||s.includes(' hayda')))intent='fireperson';
   if(!intent&&named.length)intent='call';
   if(!intent)intent='confused';
   let list=named.length?named:group?agents.filter(a=>!a.hidden&&group(a)):agents.filter(a=>!a.hidden);
-  if(intent==='forgive'){list=named.length?named:agents.filter(a=>a.hidden&&a.box===false)}
+  if(intent==='forgive')list=named.length?named:agents.filter(a=>a.hidden);
   return{intent,list,named:named.length>0,names:named,text:s};
 }
-function command(raw,isFinal){
+function command(raw){
+  if(!raw||!raw.trim())return;
   const u=understand(raw);const now=performance.now();
-  if(u.intent==='confused'&&!isFinal)return false;
-  if(lastIntentAt[u.intent]&&now-lastIntentAt[u.intent]<1800)return true;
+  if(u.intent!=='confused'&&lastIntentAt[u.intent]&&now-lastIntentAt[u.intent]<1500)return;
   lastIntentAt[u.intent]=now;lastCmdAt=now;
   const loud=loudness>.14;
-  if(MOVERS.includes(u.intent))u.list.forEach(a=>{if(a.scene&&!(u.intent==='fireperson'))freeAgent(a)});
+  if(MOVERS.includes(u.intent))u.list.forEach(a=>{if(a.scene&&u.intent!=='fireperson')freeAgent(a)});
   if(u.intent!=='forgive'&&u.intent!=='fireperson')u.list=u.list.filter(a=>!a.hidden);
   try{BOSS[u.intent](u.list,{loud,named:u.named,names:u.names,text:u.text})}catch(e){console.error(e)}
-  const who=u.named?u.names.map(a=>a.name).join(', '):'';
-  showHeard(raw,(who?who+' → ':'→ ')+LABEL[u.intent],u.intent!=='confused');
-  return true;
+  const who=u.named?u.names.map(a=>a.name).join(', ')+' → ':'→ ';
+  showHeard(raw,who+LABEL[u.intent],u.intent!=='confused');
 }
-function showHeard(txt,lab,ok){heard.innerHTML='';const q=document.createElement('span');q.textContent='🎤 «'+txt.trim()+'»';heard.appendChild(q);if(lab){const b=document.createElement('b');b.textContent='  '+lab;heard.appendChild(b)}
-  heard.classList.add('show');heard.classList.toggle('cmd',!!ok);clearTimeout(heardTimer);heardTimer=setTimeout(()=>heard.classList.remove('show'),3000)}
-function toast(txt){heard.textContent=txt;heard.classList.add('show');heard.classList.remove('cmd');clearTimeout(heardTimer);heardTimer=setTimeout(()=>heard.classList.remove('show'),3200)}
+function showHeard(txt,lab,ok,live){heard.innerHTML='';const q=document.createElement('span');q.textContent=(live?'👂 ':'🎤 ')+'«'+txt.trim()+'»';heard.appendChild(q);if(lab){const b=document.createElement('b');b.textContent='  '+lab;heard.appendChild(b)}
+  heard.classList.add('show');heard.classList.toggle('cmd',!!ok);clearTimeout(heardTimer);heardTimer=setTimeout(()=>heard.classList.remove('show'),live?1800:3200)}
+function toast(txt,ms=3600){heard.textContent=txt;heard.classList.add('show');heard.classList.remove('cmd');clearTimeout(heardTimer);heardTimer=setTimeout(()=>heard.classList.remove('show'),ms)}
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let interimDone='';
-function startRec(){
-  if(!SR)return;
-  try{rec=new SR()}catch(e){rec=null;return}
-  rec.lang='uz-UZ';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
-  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)command(r[0].transcript,true)}};
-  rec.onerror=ev=>{if(ev.error==='language-not-supported'&&rec.lang!=='ru-RU'){rec.lang='ru-RU';toast("O'zbek tili topilmadi — rus tilida tinglayapman")}if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){rec=null;toast("Nutqni tanish ishlamadi — baland ovozga javob beraman")}};
-  rec.onend=()=>{if(micState==='on'&&rec)setTimeout(()=>{try{rec.start()}catch(e){}},250)};
-  try{rec.start()}catch(e){}
+const inApp=/Telegram|Instagram|FBAN|FBAV|Line\/|wv\)/i.test(navigator.userAgent);
+const coarse=matchMedia('(pointer:coarse)').matches;
+
+function makeRec(){
+  const r=new SR();r.lang=LANGS[langIdx][0];r.continuous=!coarse;r.interimResults=true;r.maxAlternatives=1;
+  r.onstart=()=>{micBtn.classList.add('on')};
+  r.onspeechstart=()=>{speaking=true};r.onspeechend=()=>{speaking=false};
+  r.onresult=e=>{lastResultAt=performance.now();restarts=0;let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i];if(res.isFinal)command(res[0].transcript);else interim+=res[0].transcript}
+    if(interim)showHeard(interim,'',false,true)};
+  r.onerror=ev=>{const er=ev.error;
+    if(er==='not-allowed'||er==='service-not-allowed'){micState='off';micBtn.classList.remove('on');toast("Mikrofonga ruxsat berilmadi. Brauzer sozlamalarida ruxsat bering yoki ⌨ bilan yozing.",6000);openKb()}
+    else if(er==='network'){toast("Ovozni tanish uchun internet kerak (Google serveri). Tarmoqni tekshiring.",5000)}
+    else if(er==='language-not-supported'){langIdx=(langIdx+1)%LANGS.length;langBtn.textContent=LANGS[langIdx][1];toast(LANGS[langIdx][1]+" tiliga o'tdim",3000)}
+    else if(er==='audio-capture'){toast('Mikrofon topilmadi',4000)}};
+  r.onend=()=>{speaking=false;if(micState==='on'){restarts++;if(restarts>40){toast("Tinglash to'xtadi. Tugmani qayta bosing.",4000);stopMic();return}setTimeout(()=>{if(micState!=='on')return;try{rec=makeRec();rec.start()}catch(e){}},coarse?150:300)}};
+  return r;
 }
-let shoutIdx=0;
-const SHOUTS=['Ishlanglar, tezroq!','Salom hammaga!','Qalaysizlar?','Raqsga tushinglar!','Aziz, ishla!','Bonus beraman!','Tanaffus!','Majlisga yig\'ilinglar!','Pitsa buyurtma qildim!','Kim uxlayapti?','Latifa aytinglar','Yong\'in!','Urishmanglar!','Jarima!','Rahmat, barakalla!','Uyga ketinglar'];
-async function startMic(){
-  micState='starting';
+async function startVolume(){
   try{
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no');
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return false;
     stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});
     actx=new (window.AudioContext||window.webkitAudioContext)();const src=actx.createMediaStreamSource(stream);
-    analyser=actx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);
-    micState='on';micBtn.classList.add('on');micBtn.setAttribute('aria-label',"Mikrofonni o'chirish");wrap.classList.add('docked');
-    startRec();
-    toast(SR?'Tinglayapman… gapiring, boss!':'Ovozingizni eshitaman, lekin bu brauzer so\'zlarni tanimaydi. Chrome\'da oching.');
-  }catch(e){
-    micState='shout';micBtn.classList.add('shout');micBtn.setAttribute('aria-label','Buyruq berish');wrap.classList.add('docked');
-    toast('Mikrofon ochilmadi — tugmani bosib buyruq bering!');setTimeout(doShout,900);
+    analyser=actx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);return true;
+  }catch(e){return false}
+}
+function startMic(){
+  wrap.classList.add('docked');
+  if(SR){
+    micState='on';micBtn.classList.add('on');micBtn.setAttribute('aria-label',"Mikrofonni o'chirish");
+    try{rec=makeRec();rec.start()}catch(e){}
+    if(!coarse)startVolume();
+    toast('Tinglayapman ('+LANGS[langIdx][1]+')… gapiring, boss! Ekranda «👂» chiqsa, eshityapman.',4200);
+    return;
   }
+  micState='shout';micBtn.classList.add('shout');micBtn.setAttribute('aria-label','Buyruq berish');
+  toast(inApp?"Telegram/Instagram ichida ovoz ishlamaydi. Linkni Chrome'da oching. Hozircha ⌨ bilan yozing.":"Bu brauzer ovozni so'zga aylantirmaydi (Chrome kerak). ⌨ bilan yozing yoki tugmani bosing.",7000);
+  openKb();startVolume();
 }
 function stopMic(){micState='off';micBtn.classList.remove('on');micBtn.setAttribute('aria-label','Mikrofonni yoqish');
-  try{rec&&rec.stop()}catch(e){}rec=null;stream&&stream.getTracks().forEach(t=>t.stop());stream=null;try{actx&&actx.close()}catch(e){}analyser=null;ring.style.transform='scale(1)';toast("Mikrofon o'chirildi")}
-function doShout(){const c=SHOUTS[shoutIdx++%SHOUTS.length];lastIntentAt={};command(c,true)}
-micBtn.addEventListener('click',()=>{if(micState==='off')startMic();else if(micState==='on')stopMic();else if(micState==='shout')doShout()});
+  try{rec&&rec.abort()}catch(e){}rec=null;stream&&stream.getTracks().forEach(t=>t.stop());stream=null;try{actx&&actx.close()}catch(e){}analyser=null;ring.style.transform='scale(1)';toast("Mikrofon o'chirildi")}
+let shoutIdx=0;
+const SHOUTS=['Ishlanglar, tezroq!','Salom hammaga!','Qalaysizlar?','Raqsga tushinglar!','Aziz, ishla!','Bonus beraman!','Tanaffus!','Majlisga yig\'ilinglar!','Plov tayyormi?','Kim uxlayapti?','Latifa aytinglar','Sport qilinglar!','Sotuvchilar, sotinglar!','Yong\'in!','Urishmanglar!','Jarima!','Rahmat, barakalla!','Uyga ketinglar'];
+function doShout(){const c=SHOUTS[shoutIdx++%SHOUTS.length];lastIntentAt={};command(c)}
+micBtn.addEventListener('click',()=>{if(micState==='off')startMic();else if(micState==='on')stopMic();else doShout()});
+langBtn.addEventListener('click',()=>{langIdx=(langIdx+1)%LANGS.length;langBtn.textContent=LANGS[langIdx][1];try{localStorage.setItem('ishxona-lang',langIdx)}catch(e){}
+  toast(LANGS[langIdx][1]==='UZ'?"O'zbekcha tinglayman":'Ruscha tinglayman (o\'zbekcha so\'zlar ham tushuniladi)',2600);
+  if(micState==='on'){try{rec&&rec.abort()}catch(e){}}});
+function openKb(){form.hidden=false;wrap.classList.add('docked');setTimeout(()=>{try{input.focus()}catch(e){}},50)}
+kbBtn.addEventListener('click',()=>{if(form.hidden)openKb();else form.hidden=true});
+form.addEventListener('submit',e=>{e.preventDefault();const v=input.value;input.value='';lastIntentAt={};command(v)});
 function micTick(){
-  if(!analyser)return;analyser.getFloatTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];const rms=Math.sqrt(s/buf.length);
+  if(!analyser){ring.style.transform='scale('+(micState==='on'&&speaking?1.25+Math.sin(performance.now()/90)*.08:1)+')';return}
+  analyser.getFloatTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];const rms=Math.sqrt(s/buf.length);
   level=Math.max(rms,level*.9);loudness=Math.max(rms,loudness*.97);ring.style.transform='scale('+(1+Math.min(.6,level*4))+')';
   const now=performance.now();
   if(rms>.17&&now-lastLoud>2500){lastLoud=now;pendingLoud=now;
     agents.forEach(a=>{if(a.hidden)return;const sens=a.pers==='qorqoq'?.95:a.pers==='dangasa'?.1:.3;if(Math.random()<sens){jump(a,.7);if(a.act==='sleep'){a.act='work';a.timer=rand(10,20)}if(Math.random()<.4)say(a,a.pers==='qorqoq'?pick(['Voy!','Aaa!']):a.pers==='isyon'||a.pers==='asabiy'?'Kim baqiryapti?':'?!',1.4,true)}})}
-  if(pendingLoud&&now-pendingLoud>2200){if(lastCmdAt<pendingLoud){const q=agents.filter(a=>!a.hidden&&(a.pers==='qorqoq'||a.pers==='xushomad'));BOSS.work(q,{loud:true,named:false})}pendingLoud=0}
+  if(pendingLoud&&now-pendingLoud>2600){if(lastCmdAt<pendingLoud){const q=agents.filter(a=>!a.hidden&&(a.pers==='qorqoq'||a.pers==='xushomad'));BOSS.work(q,{loud:true,named:false})}pendingLoud=0}
 }
 
 drawBG();
