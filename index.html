@@ -286,7 +286,7 @@ function wait(s){return new Promise(r=>waits.push({t:gameTime+s,r}))}
 function tickWaits(){for(let i=waits.length-1;i>=0;i--)if(waits[i].t<=gameTime){const w=waits[i];waits.splice(i,1);w.r()}}
 const ABORT={abort:1};let sceneSeq=0;const scenes=new Map();const fights=[];
 const props={cake:0,pizza:0,night:0};
-function freeAgent(a){if(a.onArrive){const cb=a.onArrive;a.onArrive=null;cb()}a.scene=null;a.hidden=false;a.faceOverride=null;a.box=false;a.flash=false}
+function freeAgent(a){if(a.onArrive){const cb=a.onArrive;a.onArrive=null;cb()}a.scene=null;a.carry=null;a.hidden=false;a.faceOverride=null;a.box=false;a.flash=false}
 function runScene(core,fn){
   const id=++sceneSeq;const sc={id,core:[...core],all:[...core]};scenes.set(id,sc);
   core.forEach(a=>{a.scene=id;a.faceOverride=null});
@@ -304,7 +304,7 @@ function runScene(core,fn){
   };
   (async()=>{try{await fn(S)}catch(e){if(e!==ABORT)console.error(e)}finally{
     scenes.delete(id);for(let i=fights.length-1;i>=0;i--)if(fights[i].sid===id)fights.splice(i,1);
-    for(const a of sc.all){if(a.scene!==id)continue;a.scene=null;a.hidden=false;a.faceOverride=null;a.box=false;a.flash=false;
+    for(const a of sc.all){if(a.scene!==id)continue;a.scene=null;a.hidden=false;a.faceOverride=null;a.box=false;a.flash=false;a.carry=null;
       if(!a.home){const k=extras.indexOf(a);if(k>=0)extras.splice(k,1);continue}
       if(a.dest!==a.home||a.act==='scene')sendHome(a)}}})();
   return S;
@@ -722,6 +722,14 @@ function drawBG(){X=g;g.clearRect(0,0,WW,WH);drawFloors();drawWalls();drawFurnit
 function drawExtras(a,ox,oy,t){
   if(a.dizzy>0)for(let k=0;k<3;k++){const an=t*7+k*2.1;R(Math.round(ox+5+Math.cos(an)*7),Math.round(oy-1+Math.sin(an)*2),2,2,'#ffcf4a')}
   if(a.box){R(ox,oy+10,12,8,'#8a5a3a');R(ox+1,oy+11,10,6,'#c08552');R(ox+5,oy+11,2,6,'#e8d6b8');R(ox+2,oy+8,3,3,'#4cc9f0');R(ox+7,oy+9,2,2,'#3fbf6f')}
+  if(a.carry){const c=a.carry,x=ox+3,y=oy+8;
+    if(c==='coffee'){R(x,y,6,7,OUT);R(x+1,y+1,4,5,'#ffffff');R(x+1,y+1,4,2,'#6b3b22');R(x+6,y+2,1,3,OUT);if(Math.floor(t*3)%2)R(x+2,y-3,1,2,'#dddddd')}
+    else if(c==='pizza'){R(x-1,y,8,7,'#c9a074');R(x,y+1,6,5,'#f0b83a');R(x+1,y+2,2,2,'#c0392b');R(x+4,y+3,1,1,'#c0392b')}
+    else if(c==='flowers'){R(x+1,y+2,1,6,'#2f8a4d');R(x+4,y+2,1,6,'#2f8a4d');R(x,y,3,3,'#ef6f9b');R(x+3,y-1,3,3,'#ffcf4a');R(x+2,y+5,4,3,'#f4f1ec')}
+    else if(c==='laptop'){R(x-1,y+1,9,6,OUT);R(x,y+2,7,4,'#9aa0b0');R(x+1,y+3,5,2,'#4cc9f0')}
+    else if(c==='paper'){R(x,y,6,8,OUT);R(x+1,y+1,4,6,'#ffffff');R(x+1,y+3,3,1,'#9aa0b0')}
+    else if(c==='cake'){R(x-1,y+1,8,6,OUT);R(x,y+2,6,4,'#ef6f9b');R(x,y+2,6,1,'#fff');R(x+3,y-1,1,3,'#ffcf4a')}
+    else if(c==='box'){R(x-3,y+2,12,8,'#8a5a3a');R(x-2,y+3,10,6,'#c08552');R(x+2,y+3,2,6,'#e8d6b8')}}
   if(a.bulb>0){const on=Math.floor(t*6)%2;R(ox+3,oy-14,6,6,OUT);R(ox+4,oy-13,4,4,on?'#fff27a':'#ffd23a');R(ox+5,oy-9,2,2,'#9aa0b0');if(on){R(ox+1,oy-12,1,1,'#fff27a');R(ox+10,oy-12,1,1,'#fff27a');R(ox+5,oy-16,2,1,'#fff27a')}}
 }
 function drawProps(t){
@@ -1024,7 +1032,8 @@ function understand(raw){
   if(intent==='forgive')list=named.length?named:agents.filter(a=>a.hidden);
   return{intent,list,named:named.length>0,names:named,text:s};
 }
-function command(raw){
+function command(raw){if(!raw||!raw.trim())return;lastCmdAt=performance.now();if(caps.brain)brainCommand(raw);else localCommand(raw)}
+function localCommand(raw){
   if(!raw||!raw.trim())return;
   const u=understand(raw);const now=performance.now();
   if(u.intent!=='confused'&&lastIntentAt[u.intent]&&now-lastIntentAt[u.intent]<1500)return;
@@ -1068,6 +1077,8 @@ async function startVolume(){
 }
 function startMic(){
   wrap.classList.add('docked');
+  if(caps.stt&&navigator.mediaDevices&&window.MediaRecorder){micState='on';micBtn.classList.add('on');micBtn.setAttribute('aria-label',"Mikrofonni o'chirish");
+    startServerEars().then(ok=>{if(!ok){micState='off';micBtn.classList.remove('on');toast('Mikrofonga ruxsat berilmadi. ⌨ bilan yozing.',4500);openKb()}else toast('Tinglayapman… erkin gapiring, boss!',3000)});return}
   if(SR){
     micState='on';micBtn.classList.add('on');micBtn.setAttribute('aria-label',"Mikrofonni o'chirish");
     try{rec=makeRec();rec.start()}catch(e){}
@@ -1079,7 +1090,7 @@ function startMic(){
   toast(inApp?"Telegram/Instagram ichida ovoz ishlamaydi. Linkni Chrome'da oching. Hozircha ⌨ bilan yozing.":"Bu brauzer ovozni so'zga aylantirmaydi (Chrome kerak). ⌨ bilan yozing yoki tugmani bosing.",7000);
   openKb();startVolume();
 }
-function stopMic(){micState='off';micBtn.classList.remove('on');micBtn.setAttribute('aria-label','Mikrofonni yoqish');
+function stopMic(){if(vad&&vad.rec){const mr=vad.rec;vad.rec=null;try{mr.onstop=null;mr.stop()}catch(e){}}vad=null;micState='off';micBtn.classList.remove('on');micBtn.setAttribute('aria-label','Mikrofonni yoqish');
   try{rec&&rec.abort()}catch(e){}rec=null;stream&&stream.getTracks().forEach(t=>t.stop());stream=null;try{actx&&actx.close()}catch(e){}analyser=null;ring.style.transform='scale(1)';toast("Mikrofon o'chirildi")}
 let shoutIdx=0;
 const SHOUTS=['Ishlanglar, tezroq!','Salom hammaga!','Qalaysizlar?','Raqsga tushinglar!','Aziz, ishla!','Bonus beraman!','Tanaffus!','Majlisga yig\'ilinglar!','Plov tayyormi?','Kim uxlayapti?','Latifa aytinglar','Sport qilinglar!','Sotuvchilar, sotinglar!','Yong\'in!','Urishmanglar!','Jarima!','Rahmat, barakalla!','Uyga ketinglar'];
@@ -1094,11 +1105,118 @@ form.addEventListener('submit',e=>{e.preventDefault();const v=input.value;input.
 function micTick(){
   if(!analyser){ring.style.transform='scale('+(micState==='on'&&speaking?1.25+Math.sin(performance.now()/90)*.08:1)+')';return}
   analyser.getFloatTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];const rms=Math.sqrt(s/buf.length);
-  level=Math.max(rms,level*.9);loudness=Math.max(rms,loudness*.97);ring.style.transform='scale('+(1+Math.min(.6,level*4))+')';
+  level=Math.max(rms,level*.9);loudness=Math.max(rms,loudness*.97);vadTick(rms);ring.style.transform='scale('+(1+Math.min(.6,level*4))+')';
   const now=performance.now();
   if(rms>.17&&now-lastLoud>2500){lastLoud=now;pendingLoud=now;
     agents.forEach(a=>{if(a.hidden)return;const sens=a.pers==='qorqoq'?.95:a.pers==='dangasa'?.1:.3;if(Math.random()<sens){jump(a,.7);if(a.act==='sleep'){a.act='work';a.timer=rand(10,20)}if(Math.random()<.4)say(a,a.pers==='qorqoq'?pick(['Voy!','Aaa!']):a.pers==='isyon'||a.pers==='asabiy'?'Kim baqiryapti?':'?!',1.4,true)}})}
   if(pendingLoud&&now-pendingLoud>2600){if(lastCmdAt<pendingLoud){const q=agents.filter(a=>!a.hidden&&(a.pers==='qorqoq'||a.pers==='xushomad'));BOSS.work(q,{loud:true,named:false})}pendingLoud=0}
+}
+
+/* ================= AI brain + server ears ================= */
+const caps={brain:false,stt:false};
+fetch('/api/status',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j){caps.brain=!!j.brain;caps.stt=!!j.stt}}).catch(()=>{});
+const ROOMS={open:'open',dev:'dev',studio:'studio',sales:'sales',kitchen:'kitchen',lounge:'lounge',gym:'gym',meet:'meet',design:'design',boss:'boss',recep:'recep',canteen:'canteen',nap:'nap',bill:'bill'};
+Object.assign(REG,{dev:[32,2,46,14],studio:[48,2,62,14],kitchen:[32,16,40,24],design:[22,26,41,38],nap:[32,40,51,46]});
+function roomOf(a){const x=Math.round(a.x),y=Math.round(a.y);for(const k of['dev','studio','sales','kitchen','gym','meet','design','boss','recep','canteen','nap','bill','open','lounge']){const r=REG[k];if(r&&x>=r[0]&&x<=r[2]&&y>=r[1]&&y<=r[3])return k}return'yo\'lak'}
+const ACTUZ={work:'ishlayapti',sleep:'uxlayapti',nap:'uxlayapti',coffee:'qahva',chat:'suhbat',sofa:'dam',pong:'ping-pong',arcade:'o\'yin',meet:'majlis',run:'yugurish',boxing:'boks',yoga:'yoga',eat:'ovqat',pool:'bilyard',present:'syomka',cam:'kamera',cook:'oshpaz',recep:'resepshn',dance:'raqs',scene:'band'};
+function rosterText(){return agents.map(a=>`${a.name}|${a.team}|${a.pers}|${a.hidden?'tashqarida':(ACTUZ[a.act]||a.act)+'@'+roomOf(a)}`).join('\n')}
+const history=[];
+function findByName(n){if(!n)return null;const k=canon(norm(String(n)).trim());return agents.find(a=>a.ckeys.includes(k))||agents.find(a=>a.ckeys.some(c=>c.startsWith(k)||k.startsWith(c)))||agents.find(a=>a.ckeys.some(c=>lev(c,k)<=1))}
+function resolveWho(w){
+  if(w==='all')return agents.filter(a=>!a.hidden);
+  if(typeof w==='string'){if(w.startsWith('team:')){const t=w.slice(5);return agents.filter(a=>a.team===t&&!a.hidden)}if(w==='fem')return agents.filter(a=>a.fem&&!a.hidden);if(w==='male')return agents.filter(a=>!a.fem&&!a.hidden);const a=findByName(w);return a?[a]:[]}
+  if(Array.isArray(w))return[...new Set(w.map(findByName).filter(Boolean))];
+  return[];
+}
+const EMOTE={jump:'scene',dance:'dance',cheer:'cheer',scared:'scared',cry:'scared',angry:'scene',laugh:'scene',sleep:'sleep',spin:'scene',love:'scene',wave:'cheer',yoga:'yoga',box:'boxing',run:'run',eat:'eat',sit:'scene',think:'scene',shake:'scene'};
+async function doSteps(S,a,steps,isAll,idx){
+  let last=null;
+  for(const st of steps.slice(0,8)){
+    if(!S.in(a))return;last=st;
+    if(st.goto){const g=String(st.goto).toLowerCase();const run=st.run!==false;
+      if(g==='desk'){await S.walk(a,a.home.x,a.home.y,run,a.home.face)}
+      else if(g==='exit'){await S.walk(a,ENTRY.x,ENTRY.y,run);a.hidden=true;await S.wait(12);a.hidden=false}
+      else if(ROOMS[g]){const t=randomTile(ROOMS[g])||nearTile(a.x,a.y,2);await S.walk(a,t.x,t.y,run)}
+      else{const p=findByName(st.goto);if(p&&p!==a){const t=besideTile(p);await S.walk(a,t.x,t.y,run);faceTo(a,p)}}}
+    else if(st.say){S.say(a,String(st.say).slice(0,40),2.6);await S.wait(isAll?0.2:1.6)}
+    else if(st.emote){const e=String(st.emote),s=Math.max(1,Math.min(15,+st.s||3));
+      a.faceOverride=a.faceOverride||null;S.pose(a,EMOTE[e]||'scene');
+      if(e==='jump')jump(a,1.3);if(e==='spin')a.fx.spin=Math.min(2,s);if(e==='shake'||e==='angry'||e==='scared')a.fx.shake=Math.min(3,s);
+      if(e==='cry')tears(a);if(e==='love')hearts(a,6);if(e==='think')a.bulb=Math.min(4,s);if(e==='laugh'){jump(a,.5);S.say(a,pick(['Hahaha!','Xa-xa-xa','Hihihi']),1.6)}
+      if(e==='dance'&&isAll&&idx===0){mode='disco';modeT=Math.max(modeT,s+2)}
+      if(e==='sit'){a.dest=Object.assign({},a.dest,{sit:true})}
+      await S.wait(s);if(S.in(a))a.dest=Object.assign({},a.dest,{sit:false})}
+    else if(st.carry){a.carry=st.carry==='none'?null:String(st.carry)}
+    else if(st.face){const p=findByName(st.face);if(p)faceTo(a,p)}
+    else if(st.follow){const p=findByName(st.follow);const s=Math.max(2,Math.min(15,+st.s||6));if(p){let el=0;while(el<s&&S.in(a)){const t=besideTile(p);S.move(a,t.x,t.y,true);await S.wait(.8);el+=.8}}}
+    else if(st.wait){await S.wait(Math.max(.5,Math.min(15,+st.wait)))}
+    else if(st.work){a.carry=null;freeAgent(a);sendHome(a,true);a.panic=Math.random()<.5?8:0;return}
+  }
+  if(S.in(a))await S.wait(isAll?5:7);
+}
+function runPlan(plan){
+  if(!plan||typeof plan!=='object')return false;
+  const acts=Array.isArray(plan.actions)?plan.actions.slice(0,20):[];
+  const done=new Set();
+  acts.forEach(ac=>{const who=resolveWho(ac.who);const isAll=ac.who==='all'||(typeof ac.who==='string'&&(ac.who.startsWith('team:')||ac.who==='fem'||ac.who==='male'));
+    const steps=Array.isArray(ac.steps)?ac.steps:[];
+    who.forEach((a,i)=>{if(a.hidden&&!steps.some(s=>s.goto))return;
+      // a single say/face for someone already busy with another plan step chain: just speak
+      if(done.has(a)&&steps.every(s=>s.say)){steps.forEach(s=>say(a,String(s.say).slice(0,40),2.6,true));return}
+      done.add(a);freeAgent(a);a.carry=null;
+      if(steps.length===1&&steps[0].work){sendHome(a,true);a.panic=Math.random()<.5?8:0;if(a.act==='sleep'||a.act==='nap'){jump(a,1.4)}return}
+      runScene([a],S=>doSteps(S,a,steps,isAll,i));});
+  });
+  (Array.isArray(plan.fights)?plan.fights.slice(0,3):[]).forEach(p=>{const a=findByName(p&&p[0]),b=findByName(p&&p[1]);if(!a||!b||a===b)return;freeAgent(a);freeAgent(b);
+    runScene([a,b],async S=>{const t=besideTile(a);await S.walk(b,t.x,t.y,true);faceTo(a,b);faceTo(b,a);S.say(a,pick(['Sen-chi?!','Kel bu yoqqa!']),1.5);await S.wait(1.4);await sFight(S,a,b)})});
+  const ef=plan.effect;
+  if(ef==='disco'){mode='disco';modeT=12}else if(ef==='confetti'){mode='confetti';modeT=6;burst('conf',140)}else if(ef==='dark'){mode='dark';modeT=7;agents.forEach(a=>a.flash=!a.hidden&&Math.random()<.4)}
+  else if(ef==='fire'){mode='fire';modeT=7}else if(ef==='night'){props.night=4}else if(ef==='hearts'){agents.forEach(a=>{if(!a.hidden)hearts(a,3)})}
+  if(plan.cat){pets.cat.bubble={text:String(plan.cat).slice(0,24),t:2.4};pets.cat.fx.jump=.6}
+  return acts.length>0||!!ef;
+}
+let brainBusy=0;
+async function brainCommand(raw){
+  showHeard(raw,'🤔 xodimlar o\'ylayapti…',true);
+  shuffle(agents.filter(a=>!a.hidden&&!a.scene)).slice(0,3).forEach(a=>{a.faceOverride='d';say(a,pick(['Hmm?','Labbay?','…']),1.4,true);setTimeout(()=>{if(!a.scene)a.faceOverride=null},2500)});
+  brainBusy++;
+  try{
+    const r=await fetch('/api/brain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:raw,roster:rosterText(),history:history.slice(-4).join('\n')})});
+    if(!r.ok){const j=await r.json().catch(()=>({}));if(j.error==='no_key')caps.brain=false;if(j.error==='rate')toast('Juda tez-tez buyruq — biroz kuting',2500);throw new Error(j.error||r.status)}
+    const plan=await r.json();
+    if(!runPlan(plan))throw new Error('empty');
+    history.push(`Boss: ${raw} → ${plan.summary||''}`);
+    showHeard(raw,'→ '+(plan.summary||'bajarilmoqda'),true);
+  }catch(e){localCommand(raw)}
+  finally{brainBusy--}
+}
+
+/* server speech-to-text with voice activity detection */
+let vad=null;
+async function startServerEars(){
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}catch(e){return false}
+  actx=new (window.AudioContext||window.webkitAudioContext)();try{await actx.resume()}catch(e){}
+  const src=actx.createMediaStreamSource(stream);analyser=actx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'';
+  vad={mime,rec:null,chunks:[],speechAt:0,quietSince:0,startedAt:0,noise:.01};
+  return true;
+}
+function vadTick(rms){
+  if(!vad||micState!=='on')return;const now=performance.now();
+  vad.noise=vad.rec?vad.noise:vad.noise*.98+rms*.02;
+  const thr=Math.max(.025,vad.noise*3);
+  if(!vad.rec){if(rms>thr){try{const mr=vad.mime?new MediaRecorder(stream,{mimeType:vad.mime}):new MediaRecorder(stream);vad.chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)vad.chunks.push(e.data)};
+      mr.onstop=()=>sendAudio(new Blob(vad.chunks,{type:mr.mimeType||vad.mime||'audio/webm'}),now-vad.startedAt);mr.start(250);vad.rec=mr;vad.startedAt=now;vad.quietSince=0;showHeard('…','🎧 eshityapman',false,true)}catch(e){}}return}
+  if(rms>thr*.7)vad.quietSince=0;else if(!vad.quietSince)vad.quietSince=now;
+  if((vad.quietSince&&now-vad.quietSince>1100)||now-vad.startedAt>9000){const mr=vad.rec;vad.rec=null;try{mr.stop()}catch(e){}}
+}
+async function sendAudio(blob,dur){
+  if(dur<450||blob.size<1500)return;
+  showHeard('…','✍️ matnga aylantirilyapti',false,true);
+  try{const r=await fetch('/api/stt',{method:'POST',headers:{'Content-Type':'application/octet-stream','X-Audio-Type':blob.type||'audio/webm','X-Lang':LANGS[langIdx][1].toLowerCase()},body:blob});
+    const j=await r.json().catch(()=>({}));if(!r.ok){if(j.error==='no_key')caps.stt=false;toast('Ovozni matnga aylantirib bo\'lmadi'+(j.detail?': '+String(j.detail).slice(0,60):''),3500);return}
+    if(j.text&&j.text.trim().length>1)command(j.text);else toast('Eshitilmadi, yana bir bor ayting',1800)}
+  catch(e){toast('Internet xatosi',2000)}
 }
 
 drawBG();
